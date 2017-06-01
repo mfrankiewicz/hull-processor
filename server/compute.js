@@ -192,5 +192,6 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
       payload: sandbox.payload,
       user: updatedUser
     };
-  }
-);
+  })
+}
+
