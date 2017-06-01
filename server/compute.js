@@ -67,9 +67,9 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
     userTraits.push({ properties, context });
   };
 
-  sandbox.request = (options, callback) => {
+  sandbox.request = (opts, callback) => {
     isAsync = true;
-    return request.defaults({ timeout: 3000 })(options, (error, response, body) => {
+    return request.defaults({ timeout: 3000 })(opts, (error, response, body) => {
       try {
         callback(error, response, body);
       } catch (err) {
@@ -166,6 +166,9 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
           });
         }
       }
+      return pld;
+    }, {});
+
 
     const updatedUser = deepMerge(user, payload, {
       // we don't concatenate arrays, we use only new values:
@@ -184,6 +187,7 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
       }
       return memo;
     }, {});
+
     return {
       logs,
       errors,
@@ -192,6 +196,5 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
       payload: sandbox.payload,
       user: updatedUser
     };
-  })
-}
-
+  });
+};
