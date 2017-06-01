@@ -30,8 +30,10 @@ function getSandbox(ship) {
   if (!s) sandboxes[ship.id] = vm.createContext({});
   return sandboxes[ship.id];
 }
+const TOP_LEVEL_FIELDS = ["tags", "name", "description", "extra", "picture", "settings", "username", "email", "contact_email", "image", "first_name", "last_name", "address", "created_at", "phone", "domain", "accepts_marketing"];
 
-module.exports = function compute({ changes = {}, user, segments, events = [] }, ship = {}) {
+module.exports = function compute({ changes = {}, user, segments, events = [] }, ship = {}, options = {}) {
+  const { preview } = options;
   const { private_settings = {} } = ship;
   const { code = "", sentry_dsn: sentryDsn } = private_settings;
 
@@ -79,10 +81,18 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
   function log(...args) {
     logs.push(args);
   }
+
+  function debug(...args) {
+    // Only show debug logs in preview mode
+    if (options.preview) {
+      logs.push(args);
+    }
+  }
+
   function logError(...args) {
     errors.push(args);
   }
-  sandbox.console = { log, warn: log, error: logError };
+  sandbox.console = { log, warn: log, error: logError, debug };
 
   sandbox.captureException = function captureException(e) {
     if (sentryDsn) {
@@ -127,13 +137,12 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
     sandbox.captureException(err);
   })
   .then(() => {
-    if (tracks.length > 10) {
+    if (preview && tracks.length > 10) {
       logs.unshift([tracks]);
       logs.unshift([`You're trying to send ${tracks.length} calls at a time. We will only process the first 10`]);
       logs.unshift(["You can't send more than 10 tracking calls in one batch."]);
       tracks = _.slice(tracks, 0, 10);
     }
-
     const payload = _.reduce(userTraits, (pld, pl = {}) => {
       const { properties, context = {} } = pl;
       if (properties) {
@@ -145,6 +154,8 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
             const path = k.replace("/", ".");
             if (path.indexOf(".") > -1) {
               _.setWith(pld, path, v, Object);
+            } else if (_.includes(TOP_LEVEL_FIELDS, k)) {
+              pld[k] = v;
             } else {
               pld.traits = {
                 ...pld.traits,
@@ -155,26 +166,31 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
           });
         }
       }
-      return pld;
-    }, {});
 
-    const updatedUser = deepMerge(user, payload);
+    const updatedUser = deepMerge(user, payload, {
+      // we don't concatenate arrays, we use only new values:
+      arrayMerge: (destinationArray, sourceArray) => sourceArray
+    });
 
     const diff = deepDiff(user, updatedUser) || [];
     const changed = _.reduce(diff, (memo, d) => {
       if (d.kind === "N" || d.kind === "E") {
         _.set(memo, d.path, d.rhs);
       }
+      // when we have an array updated we set the whole
+      // array in `changed` constant
+      if (d.kind === "A") {
+        _.set(memo, d.path, _.get(payload, d.path, []));
+      }
       return memo;
     }, {});
-
     return {
       logs,
       errors,
-      changed,
+      changes: changed,
       events: tracks,
       payload: sandbox.payload,
       user: updatedUser
     };
-  });
-};
+  }
+);

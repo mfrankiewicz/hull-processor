@@ -34,6 +34,10 @@ const TESTS = {
     payload: "traits({ value: 'val0', group: { value: 'val1', group: { value: 'val2' } } } }, { source: 'group' });",
     result: { "traits_group/value": "val0", "traits_group/group/value": "val1", "traits_group/group/group/value": "val2" }
   },
+  console: {
+    payload: "console.log('boom', 'bam')",
+    result: {}
+  }
 };
 
 function payload(p) {
@@ -85,8 +89,9 @@ describe("Compute Ship", () => {
     it("Should call with a track for a simple track", (done) => {
       const spy = sinon.spy();
       const s = shipWithCode("track('Event', { key: 'value' }); return { traits: { test:'trait' } };");
-      updateUser({ message }, { hull: hullSpy(s, spy), ship: s }).then(() => {
-        sinon.assert.calledWith(spy, "track", "Event", { key: "value" });
+      updateUser({ message }, { hull: hullSpy(s, spy), ship: s });
+      .then(() => {
+        sinon.assert.calledWith(spy, "track", "Event", { key: "value" }, { ip: "0", source: "processor" });
         done();
       });
     });
@@ -94,8 +99,10 @@ describe("Compute Ship", () => {
     it("Should call with 10 tracks for 10 tracks", (done) => {
       const spy = sinon.spy();
       const s = shipWithCode("track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); return { };");
-      updateUser({ message }, { hull: hullSpy(s, spy), ship: s }).then(() => {
-        sinon.assert.callCount(spy, 11);
+      updateUser({ message }, { hull: hullSpy(s, spy), ship: s })
+      .then(() => {
+        updateUser({ message }, { hull: hullSpy(s, spy), ship: s });
+        sinon.assert.callCount(spy, 12);
         sinon.assert.calledWith(spy, "track", "Event", { key: "value" });
         sinon.assert.neverCalledWithMatch(spy, "traits");
         done();
@@ -105,8 +112,9 @@ describe("Compute Ship", () => {
     it("Should call with 10 tracks for 12 tracks", (done) => {
       const spy = sinon.spy();
       const s = shipWithCode("track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); track('Event', { key: 'value' }); return { };");
-      updateUser({ message }, { hull: hullSpy(s, spy), ship: s }).then(() => {
-        sinon.assert.callCount(spy, 11);
+      updateUser({ message }, { hull: hullSpy(s, spy), ship: s })
+      .then(() => {
+        sinon.assert.callCount(spy, 14);
         sinon.assert.calledWith(spy, "track", "Event", { key: "value" });
         sinon.assert.neverCalledWithMatch(spy, "traits");
         done();
@@ -141,6 +149,14 @@ describe("Compute Ship", () => {
         sinon.assert.neverCalledWithMatch(spy, "track");
         done();
       });
+    });
+
+    it("Should call hull logger", () => {
+      const spy = sinon.spy();
+      const s = shipWithCode(payload("console"));
+      updateUser({ message }, { hull: hullSpy(s, spy), ship: s });
+      const { id, email } = message.user;
+      sinon.assert.calledWith(spy, "logger.info", "compute.console.log", { id, email, log: ["boom", "bam"] });
     });
   });
 });

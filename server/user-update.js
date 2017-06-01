@@ -18,22 +18,33 @@ function flatten(obj, key, group) {
 module.exports = function handle({ message = {} }, { ship, hull }) {
   const { user, segments } = message;
   return compute(message, ship)
-  .then(({ changes, events }) => {
+  .then(({ changes, events, errors, logs }) => {
     const asUser = hull.as(user.id);
 
-    hull.logger.debug("compute.user.debug", { id: user.id, email: user.email, changes: JSON.stringify(changes) });
+    hull.logger.debug("compute.user.debug", { id: user.id, email: user.email, changes });
 
     if (_.size(changes)) {
       const flat = {
         ...changes.traits,
         ...flatten({}, "", _.omit(changes, "traits")),
       };
-      hull.logger.info("compute.user.computed", { id: user.id });
-      asUser.traits(flat);
+
+      if (_.size(flat)) {
+        hull.logger.info("compute.user.computed", { id: user.id, email: user.email, changes: flat });
+        asUser.traits(flat);
+      }
+    }
+
+    if (errors && errors.length > 0) {
+      hull.logger.error("compute.user.error", { id: user.id, email: user.email, errors });
     }
 
     if (events.length > 0) {
-      events.map(({ eventName, properties, context }) => asUser.track(eventName, properties, { source: "processor", ...context }));
+      events.map(({ eventName, properties, context }) => asUser.track(eventName, properties, { ip: "0", source: "processor", ...context }));
+    }
+
+    if (logs && logs.length) {
+      logs.map(log => hull.logger.info("compute.console.log", { id: user.id, email: user.email, log }));
     }
   })
   .catch(err =>
