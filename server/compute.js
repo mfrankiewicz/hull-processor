@@ -32,11 +32,12 @@ function getSandbox(ship) {
 }
 const TOP_LEVEL_FIELDS = ["tags", "name", "description", "extra", "picture", "settings", "username", "email", "contact_email", "image", "first_name", "last_name", "address", "created_at", "phone", "domain", "accepts_marketing"];
 
+const stringifyError = (err = "") => err.toString();
+
 module.exports = function compute({ changes = {}, user, segments, events = [] }, ship = {}, options = {}) {
   const { preview } = options;
   const { private_settings = {} } = ship;
   const { code = "", sentry_dsn: sentryDsn } = private_settings;
-
   // Manually add traits hash if not already there
   user.traits = user.traits || {};
 
@@ -69,7 +70,8 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
 
   sandbox.request = (opts, callback) => {
     isAsync = true;
-    return request.defaults({ timeout: 3000 })(opts, (error, response, body) => {
+    return request
+    .defaults({ timeout: 3000 })(opts, (error, response, body) => {
       try {
         callback(error, response, body);
       } catch (err) {
@@ -117,12 +119,12 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
           ${code}
         }());
       } catch (err) {
-        errors.push(err.toString());
+        errors.push((err||"Undefined error").toString());
         captureException(err);
       }`);
     script.runInContext(sandbox);
   } catch (err) {
-    errors.push(err.toString());
+    errors.push(stringifyError(err));
     sandbox.captureException(err);
   }
 
@@ -132,8 +134,8 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
   }
 
   return Promise.all(sandbox.results)
-  .catch((err) => {
-    errors.push(err.toString());
+  .catch(err => {
+    errors.push(stringifyError(err));
     sandbox.captureException(err);
   })
   .then(() => {
