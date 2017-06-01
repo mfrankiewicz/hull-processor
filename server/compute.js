@@ -11,6 +11,8 @@ import Promise from "bluebird";
 
 const TOP_LEVEL_FIELDS = ["tags", "name", "description", "extra", "picture", "settings", "username", "email", "contact_email", "image", "first_name", "last_name", "address", "created_at", "phone", "domain", "accepts_marketing"];
 
+const stringifyError = (err = "") => err.toString();
+
 function applyUtils(sandbox = {}) {
   const lodash = _.functions(_).reduce((l, key) => {
     l[key] = (...args) => _[key](...args);
@@ -90,7 +92,6 @@ module.exports = function compute({ changes = {}, user, account, segments, accou
   const { preview } = options;
   const { private_settings = {} } = ship;
   const { code = "", sentry_dsn: sentryDsn } = private_settings;
-
   // Manually add traits hash if not already there
   user.traits = user.traits || {};
   account = account || user.account || {};
@@ -146,7 +147,8 @@ module.exports = function compute({ changes = {}, user, account, segments, accou
 
   sandbox.request = (opts, callback) => {
     isAsync = true;
-    return request.defaults({ timeout: 3000 })(opts, (error, response, body) => {
+    return request
+    .defaults({ timeout: 3000 })(opts, (error, response, body) => {
       try {
         callback(error, response, body);
       } catch (err) {
@@ -194,12 +196,12 @@ module.exports = function compute({ changes = {}, user, account, segments, accou
           ${code}
         }());
       } catch (err) {
-        errors.push(err.toString());
+        errors.push((err||"Undefined error").toString());
         captureException(err);
       }`);
     script.runInContext(sandbox);
   } catch (err) {
-    errors.push(err.toString());
+    errors.push(stringifyError(err));
     sandbox.captureException(err);
   }
 
@@ -209,8 +211,8 @@ module.exports = function compute({ changes = {}, user, account, segments, accou
   }
 
   return Promise.all(sandbox.results)
-  .catch((err) => {
-    errors.push(err.toString());
+  .catch(err => {
+    errors.push(stringifyError(err));
     sandbox.captureException(err);
   })
   .then(() => {
