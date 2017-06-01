@@ -9,6 +9,7 @@ import deepMerge from "deepmerge";
 import request from "request";
 import Promise from "bluebird";
 
+
 function applyUtils(sandbox = {}) {
   const lodash = _.functions(_).reduce((l, key) => {
     l[key] = (...args) => _[key](...args);
@@ -139,6 +140,8 @@ module.exports = function compute({ changes = {}, user, segments, events = [] },
     sandbox.captureException(err);
   })
   .then(() => {
+
+
     if (preview && tracks.length > 10) {
       logs.unshift([tracks]);
       logs.unshift([`You're trying to send ${tracks.length} calls at a time. We will only process the first 10`]);

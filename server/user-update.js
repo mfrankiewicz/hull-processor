@@ -1,6 +1,7 @@
 import compute from "./compute";
 import _ from "lodash";
 import isGroup from "./is-group-trait";
+import Bottleneck from "bottleneck";
 // import _ from "lodash";
 
 function flatten(obj, key, group) {
@@ -15,9 +16,13 @@ function flatten(obj, key, group) {
   }, obj);
 }
 
+const cluster = new Bottleneck.Cluster(3, 100);
+
 module.exports = function handle({ message = {} }, { ship, hull }) {
   const { user, segments } = message;
-  return compute(message, ship)
+
+  return cluster.key(ship.id)
+  .schedule(compute, message, ship)
   .then(({ changes, events, errors, logs }) => {
     try {
       const asUser = hull.as(user.id);
@@ -48,8 +53,10 @@ module.exports = function handle({ message = {} }, { ship, hull }) {
         logs.map(log => hull.logger.info("compute.console.log", { id: user.id, email: user.email, log }));
       }
     } catch (err) {
-      hull.logger.error("compute.error", { err, user, segments, errors, changes, events, logs })
+      hull.logger.error("compute.error", { err, user, segments, errors, changes, events, logs });
     }
   })
-  .catch(err => {});
+  .catch(err => {
+    hull.logger.error(err);
+  });
 };
