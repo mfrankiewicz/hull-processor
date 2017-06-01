@@ -216,6 +216,8 @@ module.exports = function compute({ changes = {}, user, account, segments, accou
     sandbox.captureException(err);
   })
   .then(() => {
+
+
     if (preview && tracks.length > 10) {
       logs.unshift([tracks]);
       logs.unshift([`You're trying to send ${tracks.length} calls at a time. We will only process the first 10`]);

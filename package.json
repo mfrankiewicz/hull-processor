@@ -53,6 +53,7 @@
     "bluebird": "^3.4.1",
     "body-parser": "^1.15.2",
     "cache-manager-redis": "^0.4.0",
+    "bottleneck": "^1.15.1",
     "classnames": "^2.2.5",
     "codemirror": "^5.16.0",
     "connect": "^3.4.1",

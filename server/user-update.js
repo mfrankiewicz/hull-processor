@@ -2,6 +2,7 @@
 import compute from "./compute";
 import _ from "lodash";
 import isGroup from "./is-group-trait";
+import Bottleneck from "bottleneck";
 
 function flatten(obj, key, group) {
   return _.reduce(group, (m, v, k) => {
@@ -15,11 +16,14 @@ function flatten(obj, key, group) {
   }, obj);
 }
 
+const cluster = new Bottleneck.Cluster(3, 100);
+
 module.exports = function handle({ message = {} }, { ship, hull }) {
   const { user, segments } = message;
   const asUser = hull.asUser(user);
   asUser.logger.info("incoming.user.start");
-  return compute(message, ship)
+  return cluster.key(ship.id)
+  .schedule(compute, message, ship)
   .then(({ changes, events, account, accountClaims, logs, errors }) => {
     // Update user traits
     if (_.size(changes.user)) {
