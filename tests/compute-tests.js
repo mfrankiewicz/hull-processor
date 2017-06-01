@@ -133,7 +133,8 @@ describe("Compute Ship", () => {
 
   describe("Compute method using hull scoped object", () => {
     it("Should not change content if code does not return", (done) => {
-      applyCompute(CODE.empty).then(result => {
+      applyCompute(CODE.empty)
+      .then(result => {
         expect(result.user).to.be.eql(user);
         expect(result.account).to.be.eql({});
         expect(result.changes).to.be.eql({ user: {}, account: {} });
@@ -142,7 +143,8 @@ describe("Compute Ship", () => {
     });
 
     it("Should not change content if code returns invalid ", (done) => {
-      applyCompute(CODE.invalid).then(result => {
+      applyCompute(CODE.invalid)
+      .then(result => {
         expect(result.user).to.be.eql(user);
         expect(result.account).to.be.eql({});
         expect(result.changes).to.be.eql({ user: {}, account: {} });
@@ -151,7 +153,8 @@ describe("Compute Ship", () => {
     });
 
     it("Should not change content if code does not change content", (done) => {
-      applyCompute(CODE.identity).then(result => {
+      applyCompute(CODE.identity)
+      .then(result => {
         expect(result.user).to.be.eql(user);
         expect(result.account).to.be.eql({});
         expect(result.changes).to.be.eql({ user: {}, account: {} });
