@@ -1,5 +1,5 @@
 import updateUser from "../user-update";
-import { notifHandler, smartNotifierHandler } from "hull/lib/utils";
+import { notifHandler, smartNotifierHandler } from "../hull/utils";
 
 const handler = (flowControl) => (flowControl ? smartNotifierHandler : notifHandler)({
   handlers: {
