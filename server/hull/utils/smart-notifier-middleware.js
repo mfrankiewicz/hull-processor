@@ -47,6 +47,7 @@ function smartNotifierMiddlewareFactory(_ref) {
 
     if (!req || !req.body || !req.body.configuration) {
       console.log("Shit is gonna hit the fan");
+      console.log(req.body);
       console.log(req);
       console.log("+++++++++++++++++++++++++")
     }
