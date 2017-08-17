@@ -45,12 +45,6 @@ function smartNotifierMiddlewareFactory(_ref) {
   return function notifMiddleware(req, res, next) {
     req.hull = req.hull || {};
 
-    if (!req || !req.body || !req.body.configuration) {
-      console.log("Shit is gonna hit the fan");
-      console.log(req.body);
-      console.log(req);
-      console.log("+++++++++++++++++++++++++")
-    }
     smartNotifierValidator.setRequest(req);
 
     if (!smartNotifierValidator.hasFlagHeader()) {
@@ -58,6 +52,14 @@ function smartNotifierMiddlewareFactory(_ref) {
     }
 
     return _bodyParser2.default.json({ limit: "10mb" })(req, res, function () {
+
+      if (!req || !req.body || !req.body.configuration) {
+        console.log("Shit is gonna hit the fan");
+        console.log(req.body);
+        console.log(req);
+        console.log("+++++++++++++++++++++++++")
+      }
+
       _hullClient2.default.logger.debug("connector.smartNotifierHandler", _lodash2.default.pick(req.body, "channel", "notification_id"));
 
       if (!smartNotifierValidator.validatePayload()) {
