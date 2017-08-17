@@ -60,8 +60,8 @@ var SmartNotifierValidator = function () {
 
       if (!this.request.body.configuration) {
         console.log("Error in validation");
-        console.log(this.request.body);
-        console.log(this.request.body.configuration);
+        console.log(this.request);
+        console.log("-------------------")
         return false;
       }
       return true;

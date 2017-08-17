@@ -45,6 +45,11 @@ function smartNotifierMiddlewareFactory(_ref) {
   return function notifMiddleware(req, res, next) {
     req.hull = req.hull || {};
 
+    if (!req || !req.body || !req.body.configuration) {
+      console.log("Shit is gonna hit the fan");
+      console.log(req);
+      console.log("+++++++++++++++++++++++++")
+    }
     smartNotifierValidator.setRequest(req);
 
     if (!smartNotifierValidator.hasFlagHeader()) {
